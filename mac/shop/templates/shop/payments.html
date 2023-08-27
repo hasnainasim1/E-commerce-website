@@ -1,0 +1,74 @@
+{% extends 'shop/basic.html' %}
+{% block title%} Payment Options - My Awesome Cart{% endblock %}
+{% block body %}
+<div class="container">
+    <h2>Payment Options</h2>
+    <form method="post" action="{% url 'payments' %}">
+        {% csrf_token %}
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="payment_method" id="payOnline" value="pay_online" checked>
+            <label class="form-check-label" for="payOnline">
+                Pay Online (Credit/Debit Card)
+            </label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="payment_method" id="cashOnDelivery" value="cash_on_delivery">
+            <label class="form-check-label" for="cashOnDelivery">
+                Cash on Delivery
+            </label>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Proceed</button>
+    </form>
+
+    {% if payment_method == 'pay_online' %}
+    <form method="post" id="stripe-form">
+        {% csrf_token %}
+        <div class="form-group mt-4">
+            <label for="card-element">
+                Credit or Debit Card
+            </label>
+            <div id="card-element">
+                <!-- A Stripe Element will be inserted here. -->
+            </div>
+            <!-- Used to display form errors. -->
+            <div id="card-errors" role="alert"></div>
+        </div>
+        <button type="submit" class="btn btn-primary">Pay Now</button>
+    </form>
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        var stripe = Stripe('YOUR_PUBLISHABLE_KEY'); // Replace with your Stripe publishable key
+        var elements = stripe.elements();
+        var cardElement = elements.create('card');
+        cardElement.mount('#card-element');
+
+        var form = document.getElementById('stripe-form');
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            stripe.createToken(cardElement).then(function(result) {
+                if (result.error) {
+                    // Inform the user if there was an error.
+                    var errorElement = document.getElementById('card-errors');
+                    errorElement.textContent = result.error.message;
+                } else {
+                    // Send the token to your server.
+                    stripeTokenHandler(result.token);
+                }
+            });
+        });
+
+        function stripeTokenHandler(token) {
+            var form = document.getElementById('stripe-form');
+            var hiddenInput = document.createElement('input');
+            hiddenInput.setAttribute('type', 'hidden');
+            hiddenInput.setAttribute('name', 'stripeToken');
+            hiddenInput.setAttribute('value', token.id);
+            form.appendChild(hiddenInput);
+
+            form.submit();
+        }
+    </script>
+    {% endif %}
+</div>
+{% endblock %}
